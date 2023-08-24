@@ -89,7 +89,6 @@ app.get("/hello", (req, res) => {
     res.redirect('/urls');
   });
 
-
   function generateRandomString() {
     const alphanumericCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let randomString = '';
