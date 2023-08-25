@@ -1,9 +1,9 @@
 const express = require("express");
 const { getUserByEmail } = require("./helper");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080; 
 const cookieParser = require('cookie-parser');
-// const cookieSession = require('cookie-session');
+
 const users = {
   userRandomID: {
     id: "userRandomID",
@@ -17,18 +17,49 @@ const users = {
   },
 };
 
-app.set("view engine", "ejs");
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+const checkHttp = (url) => {
+  if (!url.startsWith("https://") && !url.startsWith("http://")) {
+    return "https://" + url;
+  } 
+  return url;
 };
 
+const checkURL = (url) => {
+  for (const id in urlDatabase) {
+    if (url === id) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const urlDatabase = {
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
+};
+
+const urlsForUser = (id) => {
+  let userURL = {};
+  for (const url in urlDatabase) {
+    if (id === urlDatabase[url].userID) {
+      userURL[url] = {
+        longURL: urlDatabase[url].longURL,
+        userID: urlDatabase[url].userID
+      };
+    }
+  }
+  return userURL;
+};
+
+app.set("view engine", "ejs");
+
 app.use(cookieParser());
-// app.use(cookieSession({
-//   name: 'session',
-//   keys: ['key1', 'key2'],
-//   signed: false
-// }));
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -45,57 +76,135 @@ app.get("/hello", (req, res) => {
     res.send("<html><body>Hello <b>World</b></body></html>\n");
   });
 
-  // app.get("/urls", (req, res) => {
-  //   const templateVars = { urls: urlDatabase };
-  //   res.render("urls_index", templateVars);
-  // });
-
   app.get("/urls", (req, res) => {
-    const templateVars = {
-      // username: req.cookies["username"],
-      user: users[req.cookies["user_id"]],
-      urls: urlDatabase
-    };
-    res.render("urls_index", templateVars);
+    if (req.session.userId && users[req.session.userId] === undefined) {
+     req.session = null;
+     res.redirect("/");
+   } else { 
+     const templateVars = {
+       cookieId: req.session.userId,
+       user: users[req.session.userId],
+       urls: urlsForUser(req.session.userId)
+     };
+     res.render("urls_index", templateVars);
+    }
   });
 
   app.get("/urls/new", (req, res) => {
-    const templateVars = {
-      user: users[req.cookies["user_id"]],
-    };
-    res.render("urls_new", templateVars);
+    if (!req.session.userId) {
+      res.redirect("/login");
+    } else {
+      const templateVars = {
+        cookieId: req.session.userId,
+        user: users[req.session.userId]
+      };
+      res.render("urls_new", templateVars);
+    }
   });
 
   app.get("/urls/:id", (req, res) => {
-    const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], user: users[req.cookies["user_id"]] };
-    res.render("urls_show", templateVars);
+    if (checkURL(req.params.id)) {
+      if (!req.session.userId) {
+        res.status(403).send(wrongPerm);
+      } else if (req.session.userId !== urlDatabase[req.params.id].userID) {
+        res.status(403).send(wrongUser);
+      } else {
+        const templateVars = {
+          cookieId: req.session.userId,
+          user: users[req.session.userId],
+          id: req.params.id,
+          longURL: urlDatabase[req.params.id].longURL
+        };
+        res.render("urls_show", templateVars);
+      }
+    } else {
+      res.redirect("/urls/");
+    }
   });
 
   app.get("/u/:id", (req, res) => {
-    const longURL = urlDatabase[req.params.id].longURL;
-    res.redirect(longURL);
+    if (checkURL(req.params.id)) {
+      const longURL = urlDatabase[req.params.id].longURL;
+      res.redirect(longURL);
+    } else {
+      res.status(404).send(url404);
+    }
   });
 
   app.get("/login", (req, res) => {
-      const templateVars = { 
-      user: users[req.cookies["user_id"]] 
-    };
+    if (req.session.userId) {
+      res.redirect("/urls/");
+    } else {
+      const templateVars = {
+        cookieId: req.session.userId,
+        user: users[req.session.userId]
+      };
       res.render("login", templateVars);
+    }
   });
 
 app.get("/register", (req, res) => {
+  if (req.session.userId) {
+    // If user already logged in, redirect to /urls/
+    res.redirect("/urls/");
+  } else {
     const templateVars = {
-      user: users[req.cookies["user_id"]],
+      cookieId: req.session.userId,
+      user: users[req.session.userId]
     };
-    res.render("urls_registration", templateVars)
+    res.render("urls_registration", templateVars);
+  }
 });
 
   app.post("/urls", (req, res) => {
-    console.log(req.body);
-    const longURL = req.body.longURL;
-    const shortURL = generateRandomString();
-    urlDatabase[shortURL] = longURL;
-    res.redirect(`/urls/${shortURL}`); // Respond with 'Ok' (we will replace this)
+    if (!req.session.userId) {
+      res.send("Login Required!\n");
+    } else {
+      const id = generateRandomString(6); 
+      const url = req.body.longURL;
+      urlDatabase[id] = {
+        longURL: checkHttp(url),
+        userID: req.session.userId
+      };
+      res.redirect(`/urls/${id}`);
+    }
+  });
+
+  app.post("/urls/:id", (req, res) => {
+    if (checkURL(req.params.id)) {
+      if (!req.session.userId) {
+        res.status(403).send(wrongPerm);
+      } else if (req.session.userId !== urlDatabase[req.params.id].userID) {
+        res.status(403).send(wrongUser);
+      } else {
+        const id = req.params.id;
+        const url = req.body.longURL;
+        urlDatabase[id] = {
+          longURL: checkHttp(url),
+          userID: req.session.userId
+        };
+        res.redirect("/urls/");
+      }
+    } else {
+      res.status(403).send(url404);
+    }
+  });
+
+
+  app.post("/urls/:id/delete", (req, res) => {
+    // We need to check if the URL exists, check if the user logged in, check if it is correct logged in user before actioning Delete.
+    if (checkURL(req.params.id)) {
+      if (!req.session.userId) {
+        res.status(403).send(wrongPerm);
+      } else if (req.session.userId !== urlDatabase[req.params.id].userID) {
+        res.status(403).send(wrongUser);
+      } else {
+        delete urlDatabase[req.params.id];
+        res.redirect("/urls");
+      }
+    } else {
+      res.status(403).send(url404);
+    }
   });
 
   app.post("/login", (req, res) => {
