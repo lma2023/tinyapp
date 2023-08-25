@@ -3,6 +3,7 @@ const { getUserByEmail } = require("./helper");
 const app = express();
 const PORT = 8080; 
 const cookieParser = require('cookie-parser');
+const bcrypt = require("bcryptjs");
 
 const users = {
   userRandomID: {
@@ -214,9 +215,9 @@ app.get("/register", (req, res) => {
     const user = getUserByEmail(email, users);
     const logedInUser = users[user];
   if (logedInUser) {
-    if (password === logedInUser.password) {
-    res.cookie("user_id", logedInUser.id);
-    res.redirect("/urls");
+    if (bcrypt.compareSync(password, logedInUser.password)) {
+      req.session.userId = cookieID;
+      res.redirect("/urls");
     } else {
       res.status(403).send('Passwords dont match')
       return;
@@ -246,7 +247,7 @@ app.get("/register", (req, res) => {
       users[id] = {
         id,
         email,
-        password
+        password: bcrypt.hashSync(password, 10)
       }
       res.cookie("user_id", users[id].id);
       res.redirect("/urls");
