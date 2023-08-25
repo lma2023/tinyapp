@@ -2,6 +2,7 @@ const express = require("express");
 const { getUserByEmail } = require("./helper");
 const app = express();
 const PORT = 8080; 
+const PORT = 8080; 
 const cookieParser = require('cookie-parser');
 const bcrypt = require("bcryptjs");
 
@@ -18,11 +19,10 @@ const users = {
   },
 };
 
-const checkHttp = (url) => {
-  if (!url.startsWith("https://") && !url.startsWith("http://")) {
-    return "https://" + url;
-  } 
-  return url;
+app.set("view engine", "ejs");
+const urlDatabase = {
+  "b2xVn2": "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com"
 };
 
 const checkURL = (url) => {
@@ -229,7 +229,8 @@ app.get("/register", (req, res) => {
   });
 
   app.post("/logout", (req, res) => {
-    res.clearCookie('user_id');
+    const username = req.body.username;
+    res.clearCookie("username");
     res.redirect('/urls');
   });
 
