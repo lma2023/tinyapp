@@ -1,11 +1,32 @@
-const getUserByEmail = function(email, database) {
-    for (const obj in database) {
-      if (email === database[obj].email) {
-        console.log(obj);
-        return obj;
+const getUserByEmail = function(email, userDatabase) {
+    for (const user in userDatabase) {
+      if (userDatabase[user].email === email) {
+        return userDatabase[user].id;
       }
     }
-    return undefined;
+  };
+  // Urls for the logged in user
+
+  function generateRandomString() {
+    const alphanumericCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let randomString = '';
+    for (let i = 0; i < 6; i++) {
+      randomString += alphanumericCharacters.charAt(Math.floor(Math.random() * alphanumericCharacters.length));
+    }
+    return randomString;
   };
   
-  module.exports = { getUserByEmail };
+  // Checking cookie in the database
+  const cookieUserDatabase = function(cookie, database) {
+    for (const user in database) {
+      if (cookie === user) {
+        return true;
+      }
+    } return false;
+  };
+
+  module.exports = { 
+    getUserByEmail,
+    generateRandomString,
+    cookieUserDatabase
+  };
