@@ -30,17 +30,27 @@
           </tr>
         </thead>
         <tbody>
-          <% for (let url in urls) { %>
-            <tr>
-              <td><%= url %></td>
-              <td><%= urls[url] %></td>
-              <form method="GET" action="/urls/<%= id %>">
-                <td><button type="submit" class="btn btn-outline-danger">Edit</button></td>
-              </form>
-              </td><form method="POST" action="/urls/<%= id %>/delete">
-              <td><button type="submit" class="btn btn-outline-danger">Delete</button></td>
-              </form>
-            </tr>
+          <% if (!user) { %>
+            <div class="alert alert-warning" role="alert">
+                Please <a href="/login" class="alert-link">login</a> or <a href="/register" class="alert-link">register</a> to access your collection of Short URLs.
+            </div>
+          <% } else { %>
+            <% for(let url in urls) { %>
+              <tr>
+                <td><a href=<%=urls[url].longURL%>><%= url %></a></td>
+                <td><%= urls[url].longURL %></td>
+                <td>
+                  <form class="form-inline" action="/urls/<%= url %>" method="GET">
+                    <button type="submit" class="btn btn-primary">Edit</button>
+                  </form>
+                </td>
+                <td>
+                  <form class="form-inline" action="/urls/<%= url %>/delete" method="POST">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% } %>
           <% } %>
         </tbody>
       </table>
