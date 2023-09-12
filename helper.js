@@ -1,3 +1,5 @@
+const { users, urlDatabase } = require("./database");
+
 const getUserByEmail = function(email, userDatabase) {
     for (const user in userDatabase) {
       if (userDatabase[user].email === email) {
@@ -25,8 +27,37 @@ const getUserByEmail = function(email, userDatabase) {
     } return false;
   };
 
+  const urlsForUser = function(id, urlDatabase) {
+    let userURLs = {};
+    for (const url in urlDatabase) {
+      if (id === urlDatabase[url].userId) {
+        userURLs[url] = urlDatabase[url];
+      }
+    }
+    return userURLs;
+  };
+  
+  const checkHttp = (url) => {
+    if (!url.startsWith("https://") && !url.startsWith("http://")) {
+      return "https://" + url;
+    } 
+    return url;
+  };
+  
+  const checkURL = (url) => {
+    for (const id in urlDatabase) {
+      if (url === id) {
+        return true;
+      }
+    }
+    return false;
+  };
+  
   module.exports = { 
     getUserByEmail,
     generateRandomString,
-    cookieUserDatabase
+    cookieUserDatabase,
+    checkURL,
+    checkHttp,
+    urlsForUser
   };
