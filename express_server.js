@@ -16,10 +16,6 @@ app.set("view engine", "ejs");
 
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
 // List all urls
 app.get("/urls", (req, res) => {
   const userId = req.session.user_id;
